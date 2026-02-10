@@ -1,0 +1,5 @@
+/home/ngome/compilateur/build/CMakeFiles/facile.dir
+/home/ngome/compilateur/build/CMakeFiles/package.dir
+/home/ngome/compilateur/build/CMakeFiles/package_source.dir
+/home/ngome/compilateur/build/CMakeFiles/edit_cache.dir
+/home/ngome/compilateur/build/CMakeFiles/rebuild_cache.dir
