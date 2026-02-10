@@ -69,7 +69,7 @@ include CMakeFiles/facile.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/facile.dir/flags.make
 
-facile.lex.c: facile.lex.c
+facile.lex.c: /home/ngome/compilateur/facile.lex
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --blue --bold --progress-dir=/home/ngome/compilateur/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "[FLEX][FACILE_SCANNER] Building scanner with flex 2.6.4"
 	cd /home/ngome/compilateur && /usr/bin/flex -o/home/ngome/compilateur/build/facile.lex.c facile.lex
 
