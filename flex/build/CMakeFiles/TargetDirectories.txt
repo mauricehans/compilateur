@@ -1,0 +1,5 @@
+/home/karlitosu/Documents/csharp_transpil/compilateur/build/CMakeFiles/facile.dir
+/home/karlitosu/Documents/csharp_transpil/compilateur/build/CMakeFiles/package.dir
+/home/karlitosu/Documents/csharp_transpil/compilateur/build/CMakeFiles/package_source.dir
+/home/karlitosu/Documents/csharp_transpil/compilateur/build/CMakeFiles/edit_cache.dir
+/home/karlitosu/Documents/csharp_transpil/compilateur/build/CMakeFiles/rebuild_cache.dir
