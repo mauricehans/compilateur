@@ -69,6 +69,7 @@ include CMakeFiles/facile.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/facile.dir/flags.make
 
+<<<<<<< HEAD:flex/build/CMakeFiles/facile.dir/build.make
 facile.lex.c: /home/karlitosu/Documents/csharp_transpil/compilateur/facile.lex
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --blue --bold --progress-dir=/home/karlitosu/Documents/csharp_transpil/compilateur/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "[FLEX][FACILE_SCANNER] Building scanner with flex 2.6.4"
 	cd /home/karlitosu/Documents/csharp_transpil/compilateur && /usr/bin/cmake -E make_directory /home/karlitosu/Documents/csharp_transpil/compilateur/build
@@ -76,6 +77,11 @@ facile.lex.c: /home/karlitosu/Documents/csharp_transpil/compilateur/facile.lex
 
 CMakeFiles/facile.dir/codegen:
 .PHONY : CMakeFiles/facile.dir/codegen
+=======
+facile.lex.c: /home/ngome/compilateur/facile.lex
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --blue --bold --progress-dir=/home/ngome/compilateur/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "[FLEX][FACILE_SCANNER] Building scanner with flex 2.6.4"
+	cd /home/ngome/compilateur && /usr/bin/flex -o/home/ngome/compilateur/build/facile.lex.c facile.lex
+>>>>>>> main:build/CMakeFiles/facile.dir/build.make
 
 CMakeFiles/facile.dir/facile.lex.c.o: CMakeFiles/facile.dir/flags.make
 CMakeFiles/facile.dir/facile.lex.c.o: facile.lex.c
