@@ -1,43 +1,10 @@
 %{
 #include <assert.h>
+#include <string.h>
+#include "facile.y.h" 
 
-#define TOK_IF          258
-#define TOK_THEN        259
-#define TOK_END         260
-#define TOK_ENDIF       261
-#define TOK_ELSEIF      262
-#define TOK_ELSE        263
-#define TOK_READ        264
-#define TOK_PRINT       265
-#define TOK_SEMICOLON   266
-#define TOK_ADD         267
-#define TOK_SUB         268
-#define TOK_MUL         269
-#define TOK_DIV         270
-#define TOK_AFFECTATION 271
-#define TOK_FACILE      272
-#define TOK_WHILE       273
-#define TOK_DO          274
-#define TOK_ENDWHILE    275
-#define TOK_BREAK       276
-#define TOK_CONTINUE    277
-#define TOK_IDENTIFIER  278
-#define TOK_NUMBER      279
-#define TOK_OPEN_PAREN  280
-#define TOK_CLOSE_PAREN 281
-#define TOK_TRUE        282
-#define TOK_FALSE       283
-#define TOK_NOT         284
-#define TOK_AND         285
-#define TOK_OR          286
-#define TOK_EQ          287
-#define TOK_NEQ         288
-#define TOK_INF         289
-#define TOK_SUP         290
-#define TOK_LE          291
-#define TOK_GE          292
 %}
-
+%option yylineno 
 %%
 
 if {
@@ -130,11 +97,6 @@ or {
     return TOK_OR;
 }
 
-facile {
-    assert(printf("'facile' found"));
-    return TOK_FACILE;
-}
-
 ":=" {
     assert(printf("':=' found"));
     return TOK_AFFECTATION;
@@ -210,7 +172,7 @@ facile {
     return TOK_IDENTIFIER;
 }
 
-[0-9]+ {
+0|[1-9][0-9]* {
     assert(printf("number '%s(%d)' found", yytext, yyleng));
     return TOK_NUMBER;
 }
