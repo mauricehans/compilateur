@@ -71,11 +71,80 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <glib.h>
+
 extern int yylex(void);
 extern int yyerror(const char *msg);
 extern int yylineno;
 
-#line 79 "/home/ngome/compilateur/build/facile.y.c"
+FILE       *stream;
+gchar      *module_name;
+GHashTable *table;
+
+void begin_code() {
+    fprintf(stream, ".assembly %s {}\n", module_name);
+    fprintf(stream, ".assembly extern mscorlib {}\n");
+    fprintf(stream, ".method static void Main()\n{\n");
+    fprintf(stream, ".entrypoint\n");
+    fprintf(stream, ".maxstack 10\n");
+    guint n = g_hash_table_size(table);
+    fprintf(stream, ".locals init (");
+    for (guint i = 0; i < n; i++) {
+        if (i > 0) fprintf(stream, ", ");
+        fprintf(stream, "int32");
+    }
+    fprintf(stream, ")\n");
+}
+
+void end_code() {
+    fprintf(stream, "ret\n}\n");
+}
+
+void produce_code(GNode *node) {
+    if (node->data == (gpointer)"code") {
+        produce_code(g_node_nth_child(node, 0));
+        produce_code(g_node_nth_child(node, 1));
+    } else if (node->data == (gpointer)"affectation") {
+        produce_code(g_node_nth_child(node, 1));
+        fprintf(stream, "stloc\t%ld\n",
+            (long)g_node_nth_child(g_node_nth_child(node, 0), 0)->data - 1);
+    } else if (node->data == (gpointer)"add") {
+        produce_code(g_node_nth_child(node, 0));
+        produce_code(g_node_nth_child(node, 1));
+        fprintf(stream, "add\n");
+    } else if (node->data == (gpointer)"sub") {
+        produce_code(g_node_nth_child(node, 0));
+        produce_code(g_node_nth_child(node, 1));
+        fprintf(stream, "sub\n");
+    } else if (node->data == (gpointer)"mul") {
+        produce_code(g_node_nth_child(node, 0));
+        produce_code(g_node_nth_child(node, 1));
+        fprintf(stream, "mul\n");
+    } else if (node->data == (gpointer)"div") {
+        produce_code(g_node_nth_child(node, 0));
+        produce_code(g_node_nth_child(node, 1));
+        fprintf(stream, "div\n");
+    } else if (node->data == (gpointer)"number") {
+        fprintf(stream, "ldc.i4\t%ld\n",
+            (long)g_node_nth_child(node, 0)->data);
+    } else if (node->data == (gpointer)"identifier") {
+        fprintf(stream, "ldloc\t%ld\n",
+            (long)g_node_nth_child(node, 0)->data - 1);
+    } else if (node->data == (gpointer)"print") {
+        produce_code(g_node_nth_child(node, 0));
+        fprintf(stream, "call void class [mscorlib]System.Console::WriteLine(int32)\n");
+    } else if (node->data == (gpointer)"read") {
+        fprintf(stream, "call string class [mscorlib]System.Console::ReadLine()\n");
+        fprintf(stream, "call int32 int32::Parse(string)\n");
+        fprintf(stream, "stloc\t%ld\n",
+            (long)g_node_nth_child(g_node_nth_child(node, 0), 0)->data - 1);
+    }
+    /* Exercices 4-9 : ajouter ici la gestion de if, while, boolean */
+}
+
+#line 148 "/home/ngome/compilateur/build/facile.y.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -147,7 +216,14 @@ enum yysymbol_kind_t
   YYSYMBOL_affectation = 41,               /* affectation  */
   YYSYMBOL_read = 42,                      /* read  */
   YYSYMBOL_print = 43,                     /* print  */
-  YYSYMBOL_expression = 44                 /* expression  */
+  YYSYMBOL_if = 44,                        /* if  */
+  YYSYMBOL_elseifs = 45,                   /* elseifs  */
+  YYSYMBOL_while = 46,                     /* while  */
+  YYSYMBOL_code_while = 47,                /* code_while  */
+  YYSYMBOL_expression = 48,                /* expression  */
+  YYSYMBOL_boolean = 49,                   /* boolean  */
+  YYSYMBOL_identifier = 50,                /* identifier  */
+  YYSYMBOL_number = 51                     /* number  */
 };
 typedef enum yysymbol_kind_t yysymbol_kind_t;
 
@@ -475,16 +551,16 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  3
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   32
+#define YYLAST   155
 
 /* YYNTOKENS -- Number of terminals.  */
 #define YYNTOKENS  37
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  8
+#define YYNNTS  15
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  17
+#define YYNRULES  49
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  31
+#define YYNSTATES  96
 
 /* YYMAXUTOK -- Last valid token kind.  */
 #define YYMAXUTOK   291
@@ -535,10 +611,13 @@ static const yytype_int8 yytranslate[] =
 
 #if YYDEBUG
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
-static const yytype_int8 yyrline[] =
+static const yytype_int16 yyrline[] =
 {
-       0,    51,    51,    54,    55,    59,    60,    61,    65,    69,
-      73,    77,    78,    79,    80,    81,    82,    83
+       0,   133,   133,   141,   146,   152,   153,   154,   155,   156,
+     160,   176,   191,   198,   199,   200,   201,   202,   203,   204,
+     205,   209,   214,   222,   223,   227,   232,   237,   242,   246,
+     247,   248,   249,   250,   251,   252,   256,   257,   258,   259,
+     260,   261,   262,   263,   264,   265,   266,   267,   271,   284
 };
 #endif
 
@@ -561,7 +640,8 @@ static const char *const yytname[] =
   "\"endwhile\"", "\"break\"", "\"continue\"", "\"true\"", "\"false\"",
   "\"not\"", "\"and\"", "\"or\"", "\"=\"", "\"#\"", "\"<\"", "\">\"",
   "\"<=\"", "\">=\"", "$accept", "program", "code", "instruction",
-  "affectation", "read", "print", "expression", YY_NULLPTR
+  "affectation", "read", "print", "if", "elseifs", "while", "code_while",
+  "expression", "boolean", "identifier", "number", YY_NULLPTR
 };
 
 static const char *
@@ -571,7 +651,7 @@ yysymbol_name (yysymbol_kind_t yysymbol)
 }
 #endif
 
-#define YYPACT_NINF (-12)
+#define YYPACT_NINF (-47)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
@@ -583,12 +663,18 @@ yysymbol_name (yysymbol_kind_t yysymbol)
 
 /* YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
    STATE-NUM.  */
-static const yytype_int8 yypact[] =
+static const yytype_int16 yypact[] =
 {
-     -12,     3,     1,   -12,    15,     4,    -2,   -12,   -12,   -12,
-     -12,    -2,    26,   -12,   -12,    -2,    16,    21,   -12,     9,
-     -12,    -2,    -2,    -2,    -2,   -12,   -12,    -3,    -3,   -12,
-     -12
+     -47,     9,   126,   -47,     7,    13,     2,     0,     0,   -47,
+     -47,   -47,   -47,   -47,   -47,     2,     8,   -47,   -47,     2,
+      62,   -47,   -47,     0,   -47,   -47,     0,    56,    -6,    45,
+      70,   -47,    87,   -47,     2,     2,     2,     2,    50,   -10,
+     -47,     2,     2,     2,     2,     2,     2,   -47,     0,     0,
+     -47,   -47,   -47,    -2,    -2,   -47,   -47,   -47,   141,   141,
+     141,   141,   141,   141,   102,   -47,     6,    89,   -47,     0,
+     -47,   -47,   135,   -47,   -47,    33,    37,   -47,    17,    95,
+     -47,     0,   -47,   -47,   -47,   -47,   -47,   -47,   -47,   114,
+     115,   126,   -47,   -47,   -47,   126
 };
 
 /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -596,22 +682,30 @@ static const yytype_int8 yypact[] =
    means the default is an error.  */
 static const yytype_int8 yydefact[] =
 {
-       4,     0,     2,     1,     0,     0,     0,     3,     5,     6,
-       7,     0,     0,    12,    11,     0,     0,     0,     9,     0,
-      10,     0,     0,     0,     0,     8,    17,    13,    14,    15,
-      16
+       4,     0,     2,     1,     0,     0,     0,     0,     0,     3,
+       5,     6,     7,     8,     9,     0,     0,    49,    48,     0,
+       0,    29,    30,     0,    36,    37,     0,     0,     0,     0,
+       0,    11,     0,    12,     0,     0,     0,     0,     0,     0,
+      44,     0,     0,     0,     0,     0,     0,     4,     0,     0,
+      28,    10,    35,    31,    32,    33,    34,    47,    38,    39,
+      40,    41,    42,    43,     0,    45,    46,     0,     4,     0,
+      13,    14,     0,    23,    24,     0,     0,    25,     0,     0,
+       4,     0,    17,    18,    26,    27,    15,    16,     4,     0,
+       0,    22,    19,    20,     4,    21
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-     -12,   -12,   -12,   -12,   -12,   -12,   -12,   -11
+     -47,   -47,   -46,   -18,   -47,   -47,   -47,   -47,   -47,   -47,
+     -47,    10,    -8,   -47,   -47
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-       0,     1,     2,     7,     8,     9,    10,    16
+       0,     1,     2,     9,    10,    11,    12,    13,    72,    14,
+      67,    27,    28,    21,    22
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -619,42 +713,78 @@ static const yytype_int8 yydefgoto[] =
    number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_int8 yytable[] =
 {
-      17,    13,    14,     3,    19,     4,    23,    24,    12,    15,
-      27,    28,    29,    30,     5,     6,    21,    22,    23,    24,
-      11,    26,    20,    21,    22,    23,    24,    25,    21,    22,
-      23,    24,    18
+      29,    64,    57,    17,    18,    17,    18,    36,    37,     3,
+      47,    23,    15,    19,    31,    39,    20,    16,    40,    48,
+      49,     4,    78,    48,    49,    30,    24,    25,    26,    32,
+       5,     6,     7,    38,    89,    48,    86,    87,     8,    84,
+      65,    66,    91,    85,    53,    54,    55,    56,    95,    77,
+       0,    58,    59,    60,    61,    62,    63,    34,    35,    36,
+      37,    79,    52,    34,    35,    36,    37,    50,    33,    34,
+      35,    36,    37,    90,    48,    49,    51,    34,    35,    36,
+      37,    41,    42,    43,    44,    45,    46,    41,    42,    43,
+      44,    45,    46,     4,    34,    35,    36,    37,     0,    52,
+       0,     0,     5,     6,     7,     0,     4,     0,    73,     0,
+       8,    88,    74,    75,    76,     5,     6,     7,     4,    68,
+      69,    70,    71,     8,    48,    49,     0,     5,     6,     7,
+       4,    94,     0,    92,    93,     8,     0,     0,     0,     5,
+       6,     7,     0,     0,    48,    49,     0,     8,    34,    35,
+      36,    37,    80,    81,    82,    83
 };
 
 static const yytype_int8 yycheck[] =
 {
-      11,     3,     4,     0,    15,     4,     9,    10,     4,    11,
-      21,    22,    23,    24,    13,    14,     7,     8,     9,    10,
-       5,    12,     6,     7,     8,     9,    10,     6,     7,     8,
-       9,    10,     6
+       8,    47,    12,     3,     4,     3,     4,     9,    10,     0,
+      16,    11,     5,    11,     6,    23,     6,     4,    26,    29,
+      30,     4,    68,    29,    30,    15,    26,    27,    28,    19,
+      13,    14,    15,    23,    80,    29,    19,    20,    21,     6,
+      48,    49,    88,     6,    34,    35,    36,    37,    94,    67,
+      -1,    41,    42,    43,    44,    45,    46,     7,     8,     9,
+      10,    69,    12,     7,     8,     9,    10,    22,     6,     7,
+       8,     9,    10,    81,    29,    30,     6,     7,     8,     9,
+      10,    31,    32,    33,    34,    35,    36,    31,    32,    33,
+      34,    35,    36,     4,     7,     8,     9,    10,    -1,    12,
+      -1,    -1,    13,    14,    15,    -1,     4,    -1,    19,    -1,
+      21,    16,    23,    24,    25,    13,    14,    15,     4,    17,
+      18,    19,    20,    21,    29,    30,    -1,    13,    14,    15,
+       4,    16,    -1,    19,    20,    21,    -1,    -1,    -1,    13,
+      14,    15,    -1,    -1,    29,    30,    -1,    21,     7,     8,
+       9,    10,    17,    18,    19,    20
 };
 
 /* YYSTOS[STATE-NUM] -- The symbol kind of the accessing symbol of
    state STATE-NUM.  */
 static const yytype_int8 yystos[] =
 {
-       0,    38,    39,     0,     4,    13,    14,    40,    41,    42,
-      43,     5,     4,     3,     4,    11,    44,    44,     6,    44,
-       6,     7,     8,     9,    10,     6,    12,    44,    44,    44,
-      44
+       0,    38,    39,     0,     4,    13,    14,    15,    21,    40,
+      41,    42,    43,    44,    46,     5,     4,     3,     4,    11,
+      48,    50,    51,    11,    26,    27,    28,    48,    49,    49,
+      48,     6,    48,     6,     7,     8,     9,    10,    48,    49,
+      49,    31,    32,    33,    34,    35,    36,    16,    29,    30,
+      22,     6,    12,    48,    48,    48,    48,    12,    48,    48,
+      48,    48,    48,    48,    39,    49,    49,    47,    17,    18,
+      19,    20,    45,    19,    23,    24,    25,    40,    39,    49,
+      17,    18,    19,    20,     6,     6,    19,    20,    16,    39,
+      49,    39,    19,    20,    16,    39
 };
 
 /* YYR1[RULE-NUM] -- Symbol kind of the left-hand side of rule RULE-NUM.  */
 static const yytype_int8 yyr1[] =
 {
-       0,    37,    38,    39,    39,    40,    40,    40,    41,    42,
-      43,    44,    44,    44,    44,    44,    44,    44
+       0,    37,    38,    39,    39,    40,    40,    40,    40,    40,
+      41,    42,    43,    44,    44,    44,    44,    44,    44,    44,
+      44,    45,    45,    46,    46,    47,    47,    47,    47,    48,
+      48,    48,    48,    48,    48,    48,    49,    49,    49,    49,
+      49,    49,    49,    49,    49,    49,    49,    49,    50,    51
 };
 
 /* YYR2[RULE-NUM] -- Number of symbols on the right-hand side of rule RULE-NUM.  */
 static const yytype_int8 yyr2[] =
 {
-       0,     2,     1,     2,     0,     1,     1,     1,     4,     3,
-       3,     1,     1,     3,     3,     3,     3,     3
+       0,     2,     1,     2,     0,     1,     1,     1,     1,     1,
+       4,     3,     3,     5,     5,     7,     7,     6,     6,     8,
+       8,     5,     4,     5,     5,     2,     3,     3,     0,     1,
+       1,     3,     3,     3,     3,     3,     1,     1,     3,     3,
+       3,     3,     3,     3,     2,     3,     3,     3,     1,     1
 };
 
 
@@ -1387,8 +1517,365 @@ yyreduce:
   YY_REDUCE_PRINT (yyn);
   switch (yyn)
     {
+  case 2: /* program: code  */
+#line 133 "facile.y"
+              {
+    begin_code();
+    produce_code((yyvsp[0].node));
+    end_code();
+    g_node_destroy((yyvsp[0].node));
+}
+#line 1529 "/home/ngome/compilateur/build/facile.y.c"
+    break;
 
-#line 1392 "/home/ngome/compilateur/build/facile.y.c"
+  case 3: /* code: code instruction  */
+#line 141 "facile.y"
+                     {
+        (yyval.node) = g_node_new("code");
+        g_node_append((yyval.node), (yyvsp[-1].node));
+        g_node_append((yyval.node), (yyvsp[0].node));
+    }
+#line 1539 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 4: /* code: %empty  */
+#line 146 "facile.y"
+               {
+        (yyval.node) = g_node_new("");
+    }
+#line 1547 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 5: /* instruction: affectation  */
+#line 152 "facile.y"
+                { (yyval.node) = (yyvsp[0].node); }
+#line 1553 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 6: /* instruction: read  */
+#line 153 "facile.y"
+                { (yyval.node) = (yyvsp[0].node); }
+#line 1559 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 7: /* instruction: print  */
+#line 154 "facile.y"
+                { (yyval.node) = (yyvsp[0].node); }
+#line 1565 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 8: /* instruction: if  */
+#line 155 "facile.y"
+                { (yyval.node) = (yyvsp[0].node); }
+#line 1571 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 9: /* instruction: while  */
+#line 156 "facile.y"
+                { (yyval.node) = (yyvsp[0].node); }
+#line 1577 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 10: /* affectation: "identifier" ":=" expression ";"  */
+#line 160 "facile.y"
+                                                            {
+        (yyval.node) = g_node_new("affectation");
+        GNode *id = g_node_new("identifier");
+        gulong value = (gulong)g_hash_table_lookup(table, (yyvsp[-3].string));
+        if (!value) {
+            value = g_hash_table_size(table) + 1;
+            g_hash_table_insert(table, strdup((yyvsp[-3].string)), (gpointer)value);
+        }
+        free((yyvsp[-3].string));
+        g_node_append_data(id, (gpointer)value);
+        g_node_append((yyval.node), id);
+        g_node_append((yyval.node), (yyvsp[-1].node));
+    }
+#line 1595 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 11: /* read: "read" "identifier" ";"  */
+#line 176 "facile.y"
+                                          {
+        (yyval.node) = g_node_new("read");
+        GNode *id = g_node_new("identifier");
+        gulong value = (gulong)g_hash_table_lookup(table, (yyvsp[-1].string));
+        if (!value) {
+            value = g_hash_table_size(table) + 1;
+            g_hash_table_insert(table, strdup((yyvsp[-1].string)), (gpointer)value);
+        }
+        free((yyvsp[-1].string));
+        g_node_append_data(id, (gpointer)value);
+        g_node_append((yyval.node), id);
+    }
+#line 1612 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 12: /* print: "print" expression ";"  */
+#line 191 "facile.y"
+                                       {
+        (yyval.node) = g_node_new("print");
+        g_node_append((yyval.node), (yyvsp[-1].node));
+    }
+#line 1621 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 13: /* if: "if" boolean "then" code "end"  */
+#line 198 "facile.y"
+                                                       { (yyval.node) = g_node_new("if"); g_node_append((yyval.node),(yyvsp[-3].node)); g_node_append((yyval.node),(yyvsp[-1].node)); }
+#line 1627 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 14: /* if: "if" boolean "then" code "endif"  */
+#line 199 "facile.y"
+                                                       { (yyval.node) = g_node_new("if"); g_node_append((yyval.node),(yyvsp[-3].node)); g_node_append((yyval.node),(yyvsp[-1].node)); }
+#line 1633 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 15: /* if: "if" boolean "then" code "else" code "end"  */
+#line 200 "facile.y"
+                                                       { (yyval.node) = g_node_new("ifelse"); g_node_append((yyval.node),(yyvsp[-5].node)); g_node_append((yyval.node),(yyvsp[-3].node)); g_node_append((yyval.node),(yyvsp[-1].node)); }
+#line 1639 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 16: /* if: "if" boolean "then" code "else" code "endif"  */
+#line 201 "facile.y"
+                                                         { (yyval.node) = g_node_new("ifelse"); g_node_append((yyval.node),(yyvsp[-5].node)); g_node_append((yyval.node),(yyvsp[-3].node)); g_node_append((yyval.node),(yyvsp[-1].node)); }
+#line 1645 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 17: /* if: "if" boolean "then" code elseifs "end"  */
+#line 202 "facile.y"
+                                                       { (yyval.node) = g_node_new("ifelseif"); g_node_append((yyval.node),(yyvsp[-4].node)); g_node_append((yyval.node),(yyvsp[-2].node)); g_node_append((yyval.node),(yyvsp[-1].node)); }
+#line 1651 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 18: /* if: "if" boolean "then" code elseifs "endif"  */
+#line 203 "facile.y"
+                                                       { (yyval.node) = g_node_new("ifelseif"); g_node_append((yyval.node),(yyvsp[-4].node)); g_node_append((yyval.node),(yyvsp[-2].node)); g_node_append((yyval.node),(yyvsp[-1].node)); }
+#line 1657 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 19: /* if: "if" boolean "then" code elseifs "else" code "end"  */
+#line 204 "facile.y"
+                                                                 { (yyval.node) = g_node_new("ifelseifelse"); g_node_append((yyval.node),(yyvsp[-6].node)); g_node_append((yyval.node),(yyvsp[-4].node)); g_node_append((yyval.node),(yyvsp[-3].node)); g_node_append((yyval.node),(yyvsp[-1].node)); }
+#line 1663 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 20: /* if: "if" boolean "then" code elseifs "else" code "endif"  */
+#line 205 "facile.y"
+                                                                 { (yyval.node) = g_node_new("ifelseifelse"); g_node_append((yyval.node),(yyvsp[-6].node)); g_node_append((yyval.node),(yyvsp[-4].node)); g_node_append((yyval.node),(yyvsp[-3].node)); g_node_append((yyval.node),(yyvsp[-1].node)); }
+#line 1669 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 21: /* elseifs: elseifs "elseif" boolean "then" code  */
+#line 209 "facile.y"
+                                             {
+        (yyval.node) = (yyvsp[-4].node);
+        g_node_append((yyval.node), (yyvsp[-2].node));
+        g_node_append((yyval.node), (yyvsp[0].node));
+    }
+#line 1679 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 22: /* elseifs: "elseif" boolean "then" code  */
+#line 214 "facile.y"
+                                     {
+        (yyval.node) = g_node_new("elseifs");
+        g_node_append((yyval.node), (yyvsp[-2].node));
+        g_node_append((yyval.node), (yyvsp[0].node));
+    }
+#line 1689 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 23: /* while: "while" boolean "do" code_while "end"  */
+#line 222 "facile.y"
+                                                     { (yyval.node) = g_node_new("while"); g_node_append((yyval.node),(yyvsp[-3].node)); g_node_append((yyval.node),(yyvsp[-1].node)); }
+#line 1695 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 24: /* while: "while" boolean "do" code_while "endwhile"  */
+#line 223 "facile.y"
+                                                     { (yyval.node) = g_node_new("while"); g_node_append((yyval.node),(yyvsp[-3].node)); g_node_append((yyval.node),(yyvsp[-1].node)); }
+#line 1701 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 25: /* code_while: code_while instruction  */
+#line 227 "facile.y"
+                           {
+        (yyval.node) = g_node_new("code");
+        g_node_append((yyval.node), (yyvsp[-1].node));
+        g_node_append((yyval.node), (yyvsp[0].node));
+    }
+#line 1711 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 26: /* code_while: code_while "break" ";"  */
+#line 232 "facile.y"
+                                       {
+        (yyval.node) = g_node_new("code");
+        g_node_append((yyval.node), (yyvsp[-2].node));
+        g_node_append((yyval.node), g_node_new("break"));
+    }
+#line 1721 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 27: /* code_while: code_while "continue" ";"  */
+#line 237 "facile.y"
+                                          {
+        (yyval.node) = g_node_new("code");
+        g_node_append((yyval.node), (yyvsp[-2].node));
+        g_node_append((yyval.node), g_node_new("continue"));
+    }
+#line 1731 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 28: /* code_while: %empty  */
+#line 242 "facile.y"
+               { (yyval.node) = g_node_new(""); }
+#line 1737 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 29: /* expression: identifier  */
+#line 246 "facile.y"
+               { (yyval.node) = (yyvsp[0].node); }
+#line 1743 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 30: /* expression: number  */
+#line 247 "facile.y"
+               { (yyval.node) = (yyvsp[0].node); }
+#line 1749 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 31: /* expression: expression "+" expression  */
+#line 248 "facile.y"
+                                  { (yyval.node) = g_node_new("add"); g_node_append((yyval.node),(yyvsp[-2].node)); g_node_append((yyval.node),(yyvsp[0].node)); }
+#line 1755 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 32: /* expression: expression "-" expression  */
+#line 249 "facile.y"
+                                  { (yyval.node) = g_node_new("sub"); g_node_append((yyval.node),(yyvsp[-2].node)); g_node_append((yyval.node),(yyvsp[0].node)); }
+#line 1761 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 33: /* expression: expression "*" expression  */
+#line 250 "facile.y"
+                                  { (yyval.node) = g_node_new("mul"); g_node_append((yyval.node),(yyvsp[-2].node)); g_node_append((yyval.node),(yyvsp[0].node)); }
+#line 1767 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 34: /* expression: expression "/" expression  */
+#line 251 "facile.y"
+                                  { (yyval.node) = g_node_new("div"); g_node_append((yyval.node),(yyvsp[-2].node)); g_node_append((yyval.node),(yyvsp[0].node)); }
+#line 1773 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 35: /* expression: "(" expression ")"  */
+#line 252 "facile.y"
+                                              { (yyval.node) = (yyvsp[-1].node); }
+#line 1779 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 36: /* boolean: "true"  */
+#line 256 "facile.y"
+              { (yyval.node) = g_node_new("true"); }
+#line 1785 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 37: /* boolean: "false"  */
+#line 257 "facile.y"
+              { (yyval.node) = g_node_new("false"); }
+#line 1791 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 38: /* boolean: expression "=" expression  */
+#line 258 "facile.y"
+                                  { (yyval.node) = g_node_new("eq");  g_node_append((yyval.node),(yyvsp[-2].node)); g_node_append((yyval.node),(yyvsp[0].node)); }
+#line 1797 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 39: /* boolean: expression "#" expression  */
+#line 259 "facile.y"
+                                  { (yyval.node) = g_node_new("neq"); g_node_append((yyval.node),(yyvsp[-2].node)); g_node_append((yyval.node),(yyvsp[0].node)); }
+#line 1803 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 40: /* boolean: expression "<" expression  */
+#line 260 "facile.y"
+                                  { (yyval.node) = g_node_new("inf"); g_node_append((yyval.node),(yyvsp[-2].node)); g_node_append((yyval.node),(yyvsp[0].node)); }
+#line 1809 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 41: /* boolean: expression ">" expression  */
+#line 261 "facile.y"
+                                  { (yyval.node) = g_node_new("sup"); g_node_append((yyval.node),(yyvsp[-2].node)); g_node_append((yyval.node),(yyvsp[0].node)); }
+#line 1815 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 42: /* boolean: expression "<=" expression  */
+#line 262 "facile.y"
+                                  { (yyval.node) = g_node_new("le");  g_node_append((yyval.node),(yyvsp[-2].node)); g_node_append((yyval.node),(yyvsp[0].node)); }
+#line 1821 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 43: /* boolean: expression ">=" expression  */
+#line 263 "facile.y"
+                                  { (yyval.node) = g_node_new("ge");  g_node_append((yyval.node),(yyvsp[-2].node)); g_node_append((yyval.node),(yyvsp[0].node)); }
+#line 1827 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 44: /* boolean: "not" boolean  */
+#line 264 "facile.y"
+                    { (yyval.node) = g_node_new("not"); g_node_append((yyval.node),(yyvsp[0].node)); }
+#line 1833 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 45: /* boolean: boolean "and" boolean  */
+#line 265 "facile.y"
+                            { (yyval.node) = g_node_new("and"); g_node_append((yyval.node),(yyvsp[-2].node)); g_node_append((yyval.node),(yyvsp[0].node)); }
+#line 1839 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 46: /* boolean: boolean "or" boolean  */
+#line 266 "facile.y"
+                            { (yyval.node) = g_node_new("or");  g_node_append((yyval.node),(yyvsp[-2].node)); g_node_append((yyval.node),(yyvsp[0].node)); }
+#line 1845 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 47: /* boolean: "(" boolean ")"  */
+#line 267 "facile.y"
+                                           { (yyval.node) = (yyvsp[-1].node); }
+#line 1851 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 48: /* identifier: "identifier"  */
+#line 271 "facile.y"
+                   {
+        (yyval.node) = g_node_new("identifier");
+        gulong value = (gulong)g_hash_table_lookup(table, (yyvsp[0].string));
+        if (!value) {
+            value = g_hash_table_size(table) + 1;
+            g_hash_table_insert(table, strdup((yyvsp[0].string)), (gpointer)value);
+        }
+        free((yyvsp[0].string));
+        g_node_append_data((yyval.node), (gpointer)value);
+    }
+#line 1866 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+  case 49: /* number: "number"  */
+#line 284 "facile.y"
+               {
+        (yyval.node) = g_node_new("number");
+        g_node_append_data((yyval.node), (gpointer)(yyvsp[0].number));
+    }
+#line 1875 "/home/ngome/compilateur/build/facile.y.c"
+    break;
+
+
+#line 1879 "/home/ngome/compilateur/build/facile.y.c"
 
       default: break;
     }
@@ -1612,7 +2099,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 86 "facile.y"
+#line 290 "facile.y"
 
 
 int yyerror(const char *msg) {
@@ -1620,6 +2107,56 @@ int yyerror(const char *msg) {
 }
 
 int main(int argc, char *argv[]) {
-    yyparse();
+    if (argc == 2) {
+        char *file_name_input = argv[1];
+        char *extension = rindex(file_name_input, '.');
+        if (!extension || strcmp(extension, ".facile") != 0) {
+            fprintf(stderr, "Input filename extension must be '.facile'\n");
+            return EXIT_FAILURE;
+        }
+        char *directory_delimiter = rindex(file_name_input, '/');
+        if (!directory_delimiter)
+            directory_delimiter = rindex(file_name_input, '\\');
+        char *basename = directory_delimiter
+            ? strdup(directory_delimiter + 1)
+            : strdup(file_name_input);
+        module_name = strdup(basename);
+        *rindex(module_name, '.') = '\0';
+        strcpy(rindex(basename, '.'), ".il");
+        char *onechar = module_name;
+        if (!isalpha(*onechar) && *onechar != '_') {
+            free(basename);
+            fprintf(stderr, "Base input filename must start with a letter or an underscore\n");
+            return EXIT_FAILURE;
+        }
+        for (onechar++; *onechar; onechar++) {
+            if (!isalnum(*onechar) && *onechar != '_') {
+                free(basename);
+                fprintf(stderr, "Base input filename cannot contain special characters\n");
+                return EXIT_FAILURE;
+            }
+        }
+        if ((stdin = fopen(file_name_input, "r"))) {
+            if ((stream = fopen(basename, "w"))) {
+                table = g_hash_table_new_full(g_str_hash, g_str_equal, free, NULL);
+                yyparse();
+                g_hash_table_destroy(table);
+                fclose(stream);
+                fclose(stdin);
+            } else {
+                free(basename); fclose(stdin);
+                fprintf(stderr, "Output filename cannot be opened\n");
+                return EXIT_FAILURE;
+            }
+        } else {
+            free(basename);
+            fprintf(stderr, "Input filename cannot be opened\n");
+            return EXIT_FAILURE;
+        }
+        free(basename);
+    } else {
+        fprintf(stderr, "No input filename given\n");
+        return EXIT_FAILURE;
+    }
     return EXIT_SUCCESS;
 }
