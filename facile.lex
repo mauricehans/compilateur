@@ -43,13 +43,13 @@ or          { assert(printf("'or' found"));       return TOK_OR; }
 
 [a-zA-Z][a-zA-Z0-9_]* {
     assert(printf("identifier '%s(%d)' found", yytext, yyleng));
-    yylval.string = strdup(yytext);
+    yylval.string = strdup(yytext);   /* ← stocke le nom dans yylval */
     return TOK_IDENTIFIER;
 }
 
 0|[1-9][0-9]* {
     assert(printf("number '%s(%d)' found", yytext, yyleng));
-    sscanf(yytext, "%lu", &yylval.number);
+    sscanf(yytext, "%lu", &yylval.number);  /* ← stocke la valeur dans yylval */
     return TOK_NUMBER;
 }
 
